@@ -1,0 +1,13 @@
+{
+    "files.associations": {
+        "*.php": "html",
+        "kernel.h": "c",
+        "idt.h": "c",
+        "init.h": "c",
+        "gdt.h": "c",
+        "interrupts.h": "c",
+        "vga.h": "c",
+        "io.h": "c",
+        "paging.h": "c"
+    }
+}
