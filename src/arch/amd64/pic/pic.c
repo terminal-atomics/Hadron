@@ -13,3 +13,12 @@ void pic_init() {
     outb(0x21, 0x0);
     outb(0xA1, 0x0);
 }
+
+void pic_ack_master() {
+    outb(PIC_M_CMD_PORT,0x20);
+}
+
+void pic_ack_slave() {
+    outb(PIC_M_CMD_PORT,0x20);
+    outb(PIC_S_CMD_PORT,0x20);
+}

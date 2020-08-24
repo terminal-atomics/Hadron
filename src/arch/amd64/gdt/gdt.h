@@ -3,24 +3,9 @@
 
 #define GDT_ENTRY_COUNT 64
 
-#define GDT_FLAG_CODE   (3 << 3)
-#define GDT_FLAG_C_A    (1 << 0)
-#define GDT_FLAG_C_R    (1 << 1)
-#define GDT_FLAG_C_C    (1 << 2)
-#define GDT_FLAG_C_P    (1 << 7)
-#define GDT_FLAG_C_AVL  (1 << 12)
-#define GDT_FLAG_C_L    (1 << 13)
-#define GDT_FLAG_C_D    (1 << 14)
-#define GDT_FLAG_C_G    (1 << 15)
-
-#define GDT_FLAG_DATA   (2 << 3)
-#define GDT_FLAG_D_A    (1 << 0)
-#define GDT_FLAG_D_W    (1 << 1)
-#define GDT_FLAG_D_E    (1 << 2)
-#define GDT_FLAG_D_P    (1 << 7)
-#define GDT_FLAG_D_AVL  (1 << 12)
-#define GDT_FLAG_D_D    (1 << 14)
-#define GDT_FLAG_D_G    (1 << 15)
+// Most flags and fields are ignores
+#define GDT_FLAG_CODE   0b0010000010011000
+#define GDT_FLAG_DATA   0b0010000010010010
 
 struct gdt_entry {
     uint16_t limit_l;

@@ -20,7 +20,16 @@ extern _c_isr_handlers
     push r14
     push r15
 
-    mov rax, %1
+%if %1 >= 32 && %1 < 40
+    mov al, 0x20
+    out 0x20, al
+%elif %1 >= 40 && %1 < 48
+    mov al, 0x20
+    out 0x20, al
+    out 0xA0, al
+%endif
+
+    mov rax, %1*8
     jmp _isr_common
 %endmacro
 
@@ -45,6 +54,15 @@ extern _c_isr_handlers
     push r14
     push r15
 
+%if %1 >= 32 && %1 < 40
+    mov al, 0x20
+    out 0x20, al
+%elif %1 >= 40 && %1 < 48
+    mov al, 0x20
+    out 0x20, al
+    out 0xA0, al
+%endif
+
     mov rax, %1*8
     jmp _isr_common
 %endmacro
@@ -59,13 +77,9 @@ _isr_common:
     mov rbx, cr4
     push rbx
 
-    mov rbx, rsp
-    push rbx
+    mov rdi, rsp
     mov rbx, [_c_isr_handlers + rax]
     call rbx
-
-    mov al, 0x20
-    out 0x20, al
 
     pop rbx
     mov cr4, rbx
@@ -93,7 +107,10 @@ _isr_common:
     pop rbx
     pop rax
 
-    iret
+    ; Pop int no and error code
+    add esp, 16
+
+    iretq
 
 ; Define all ISRs
 global _isr0

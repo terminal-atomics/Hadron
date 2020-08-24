@@ -7,3 +7,5 @@
 #define PIC_S_DATA_PORT     0xA1
 
 void pic_init();
+void pic_ack_master();
+void pic_ack_slave();

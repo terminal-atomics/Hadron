@@ -290,9 +290,9 @@ void interrupts_unbind_handler(int id) {
 }
 
 void _c_dummy_isr(isr_state_t* state) {
-    // Wow, much code
     (void)state;
 }
+
 void interrupts_enable() {
     asm("sti");
 }

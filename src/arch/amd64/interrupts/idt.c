@@ -29,6 +29,5 @@ idt_entry_t* idt_get_entry(int id) {
 }
 
 void idt_load() {
-    asm("xchgw %bx, %bx");
     asm("lidt %0" : : "m"(_k_idt_desc));
 }
