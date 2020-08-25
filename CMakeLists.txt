@@ -11,7 +11,7 @@ set(CMAKE_C_COMPILER "x86_64-elf-gcc")
 set(CMAKE_LINKER "x86_64-elf-ld")
 set(CMAKE_C_LINK_EXECUTABLE  "<CMAKE_LINKER> <CMAKE_CXX_LINK_FLAGS> <LINK_FLAGS> <OBJECTS> -o <TARGET> <LINK_LIBRARIES>")
 
-set(CMAKE_C_FLAGS "-mno-sse -nostdlib -ffreestanding -O3 -fno-exceptions -Wall -Wextra")
+set(CMAKE_C_FLAGS "-mno-sse -nostdlib -ffreestanding -fno-exceptions -Wall -Wextra -g")
 set(CMAKE_ASM_NASM_FLAGS "")
 set(CMAKE_EXE_LINKER_FLAGS "-T ../src/arch/amd64/linker.ld -z max-page-size=4096")
 

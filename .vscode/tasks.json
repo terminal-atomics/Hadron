@@ -35,7 +35,7 @@
         {
             "label": "Run (With ISO)",
             "type": "shell",
-            "command": "bash --login -c 'cd build && make -j4 iso'; &('C:/Program Files/qemu/qemu-system-x86_64') -cdrom bin/amd64/hadron.iso",
+            "command": "bash --login -c 'cd build && make -j4 iso'; &('C:/Program Files/qemu/qemu-system-x86_64') -cdrom bin/amd64/hadron.iso -s -S",
             "group": {
                 "kind": "test",
                 "isDefault": true
@@ -49,6 +49,15 @@
                 "kind": "test",
                 "isDefault": true
             }
-        }
+        },
+        {
+            "label": "Qemu Debug",
+            "type": "shell",
+            "command": "bash --login -c 'cd build && make -j4 iso' ; ./emu/qemu_gdb_win.ps1",
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            }
+        },
     ]
 }

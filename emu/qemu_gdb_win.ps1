@@ -1,0 +1,1 @@
+start 'C:/Program Files/qemu/qemu-system-x86_64.exe' '-cdrom bin/amd64/hadron.iso -s -S' ; wt new-tab -p "Arch" D:\ArchLinux\arch.exe run "gdb /mnt/d/Documents/Code/Hadron/bin/amd64/hadron -ex 'target remote :1234'"
