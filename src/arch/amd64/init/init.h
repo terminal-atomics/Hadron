@@ -2,5 +2,14 @@
 #include <arch/amd64/gdt/gdt.h>
 #include <arch/amd64/interrupts/interrupts.h>
 #include <arch/amd64/vga_basic/vga.h>
+#include <arch/amd64/paging/paging.h>
+#include <dump.h>
+#include <common/multiboot/multiboot.h>
+#include <common/memory/mmap.h>
+#include <common/memory/palloc.h>
 
-start_task(isr_state_t* state);
+void _init();
+
+// Kernel size detection for mmap
+extern void _kernel_code_start();
+extern void _kernel_code_end();

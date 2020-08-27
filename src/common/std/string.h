@@ -1,6 +1,7 @@
 #pragma once
 #include <stdint.h>
 #include <stdbool.h>
+#include <dump.h>
 
 void* memcpy(void* dstptr, void* srcptr, uint64_t size);
 void* memset(void* bufptr, uint8_t value, uint64_t size);

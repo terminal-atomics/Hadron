@@ -30,4 +30,9 @@ SECTIONS
 		*(COMMON)
 		*(.bss)
 	}
+
+	.bss BLOCK(4K) : ALIGN(4K)
+	{
+		*(.size_detect)
+	}
 }

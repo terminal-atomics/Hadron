@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdbool.h>
+#include <common/memory/palloc.h>
 
 #define PAGING_ADDR_MASK        0xFFFFFFFFFF000
 #define PAGING_PML4_INDX(i)     (((i) >> 39) & 0b111111111)
@@ -37,7 +38,7 @@ typedef struct paging_ctx paging_ctx_t;
 
 extern paging_ctx_t paging_k_ctx;
 
-void paging_init(paging_ctx_t* ctx, bool kernel);
+void paging_init(paging_ctx_t* ctx);
 void paging_install(paging_ctx_t* ctx);
 void paging_map(paging_ctx_t* ctx, uint64_t virt, uint64_t phy, size_t count, uint16_t flags);
 void paging_unmap(paging_ctx_t* ctx, uint64_t virt, uint64_t phy, size_t count);

@@ -7,6 +7,9 @@ CHECKSUM    equ     -(MAGIC + FLAGS)
 section .multiboot
 align 8
 
+global _kernel_code_start
+_kernel_code_start:
+
 dd MAGIC
 dd FLAGS
 dd CHECKSUM
@@ -19,20 +22,10 @@ _stack_bottom:
 resb 0x1000
 _stack_top:
 
-; Page table
-_temp_pt_0:
-resb 0x1000
-_temp_pt_1:
-resb 0x1000
-_temp_pt_end:
-
-; Page directory table
-_temp_pdt:
-resb 0x1000
-
 ; Page directory pointer table
 _temp_pdpt:
 resb 0x1000
+_temp_pdpt_end:
 
 ; Level 4 tabme
 _temp_pml4t:
@@ -47,34 +40,34 @@ _start:
     ; Setup the stack
     mov esp, _stack_top
 
+    ; Save multiboot and push dummy bytes since we pop 64 bits at a time
+    push dword 0
+    push ebx
+    push dword 0
+    push eax
+
     ; Clear paging tables
     xor eax, eax
-    mov ebx, 0x5000
+    mov ebx, 0x2000
 
-    mov esi, _temp_pt_0
+    mov esi, _temp_pdpt
     call _memset
 
     ; Fill both page tables
-    mov eax, 0b11 ; Flags
-    mov esi, _temp_pt_0
-_pt_fill_loop:
+    mov eax, 0b10000011 ; Flags
+    xor ebx, ebx
+    mov esi, _temp_pdpt
+    clc
+_pdp_fill_loop:
     mov [esi], eax
+    mov [esi + 4], ebx
     add esi, 8
-    add eax, 0x1000
-    cmp esi, _temp_pt_end
-    jl _pt_fill_loop
-
-    ; Fill PDT
-    mov eax, _temp_pt_0
-    or eax, 0b11 ; Flags
-    mov [_temp_pdt], eax
-    add eax, 0x1000
-    mov [_temp_pdt + 8], eax
-
-    ; Fill PDPT
-    mov eax, _temp_pdt
-    or eax, 0b11 ; Flags
-    mov [_temp_pdpt], eax
+    add eax, 0x40000000
+    jnc _pdp_fill_no_carry
+    inc ebx
+_pdp_fill_no_carry:
+    cmp esi, _temp_pdpt_end
+    jl _pdp_fill_loop
 
     ; Fill PML4T
     mov eax, _temp_pdpt
@@ -122,6 +115,16 @@ bits 64
 extern _init
 _long_mode_init:
     cli
+
+    ; Get multiboot info back from the stack and convert to 64bit
+    xor rax, rax
+    xor rbx, rbx
+    pop rax
+    pop rbx
+    mov rdi, rax
+    mov rsi, rbx
+
+    xor rbp, rbp
     call _init
 
 _end:
@@ -153,3 +156,7 @@ _temp_gdt64:                           ; Global Descriptor Table (64-bit).
     .ptr:                    ; The GDT-pointer.
     dw $ - _temp_gdt64 - 1             ; Limit.
     dq _temp_gdt64                     ; Base.
+
+section .size_detect
+global _kernel_code_end
+_kernel_code_end:

@@ -16,6 +16,7 @@ void* memcpy(void* dstptr, void* srcptr, uint64_t size) {
 void* memset(void* bufptr, uint8_t value, uint64_t size) {
 	uint8_t* buf = (uint8_t*) bufptr;
 	for (uint64_t i = 0; i < size; i++) {
+		//dump_hex_word(&buf[i]); vga_println("");
 		buf[i] = value;
 	}	
 	return bufptr;
