@@ -22,6 +22,11 @@ _stack_bottom:
 resb 0x1000
 _stack_top:
 
+; Page directory
+_temp_pd:
+resb 0x1000
+_temp_pd_end:
+
 ; Page directory pointer table
 _temp_pdpt:
 resb 0x1000
@@ -30,6 +35,7 @@ _temp_pdpt_end:
 ; Level 4 tabme
 _temp_pml4t:
 resb 0x1000
+_temp_pml4t_end:
 
 section .text
 global _start
@@ -48,31 +54,37 @@ _start:
 
     ; Clear paging tables
     xor eax, eax
-    mov ebx, 0x2000
+    mov ebx, 0x3000
 
-    mov esi, _temp_pdpt
+    mov esi, _temp_pd
     call _memset
 
-    ; Fill both page tables
+    ; Fill pd
     mov eax, 0b10000011 ; Flags
     xor ebx, ebx
-    mov esi, _temp_pdpt
+    mov esi, _temp_pd
     clc
-_pdp_fill_loop:
+_pd_fill_loop:
     mov [esi], eax
     mov [esi + 4], ebx
     add esi, 8
-    add eax, 0x40000000
-    jnc _pdp_fill_no_carry
+    add eax, 0x200000
+    jnc _pd_fill_no_carry
     inc ebx
-_pdp_fill_no_carry:
-    cmp esi, _temp_pdpt_end
-    jl _pdp_fill_loop
+_pd_fill_no_carry:
+    cmp esi, _temp_pd_end
+    jl _pd_fill_loop
+
+    ; Fill PDPT
+    mov eax, _temp_pd
+    or eax, 0b11 ; Flags
+    mov [_temp_pdpt], eax
 
     ; Fill PML4T
     mov eax, _temp_pdpt
     or eax, 0b11 ; Flags
     mov [_temp_pml4t], eax
+    
 
     ; Set CR3 to the pmlt4
     mov eax, _temp_pml4t

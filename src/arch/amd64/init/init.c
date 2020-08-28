@@ -42,8 +42,68 @@ struct stack_frame {
 typedef struct stack_frame stack_frame_t;
 
 void err_handler(isr_state_t* state) {
-    vga_print("\n\nError: ");
-    vga_println(exception_messages[state->int_no]);
+    vga_set_color(0x04);
+    vga_print("\n\nPANIC: ");
+    vga_print(exception_messages[state->int_no]);
+    vga_print(" (");
+    dump_hex_word(state->err_code);
+    vga_println(")");
+
+    // Dump registers
+    vga_print("CR0: ");
+    dump_hex_word(state->cr0);
+    vga_print("    CR2:    ");
+    dump_hex_word(state->cr2);
+
+    vga_print("\nCR3: ");
+    dump_hex_word(state->cr2);
+    vga_print("    CR4:    ");
+    dump_hex_word(state->cr4);
+
+    vga_print("\nRAX: ");
+    dump_hex_word(state->rax);
+    vga_print("    RBX:    ");
+    dump_hex_word(state->rbx);
+
+    vga_print("\nRCX: ");
+    dump_hex_word(state->rcx);
+    vga_print("    RDX:    ");
+    dump_hex_word(state->rdx);
+
+    vga_print("\nRBP: ");
+    dump_hex_word(state->rbp);
+    vga_print("    RDI:    ");
+    dump_hex_word(state->rdi);
+
+    vga_print("\nRSI: ");
+    dump_hex_word(state->rsi);
+    vga_print("    R8:     ");
+    dump_hex_word(state->r8);
+
+    vga_print("\nR9:  ");
+    dump_hex_word(state->r9);
+    vga_print("    R10:    ");
+    dump_hex_word(state->r10);
+
+    vga_print("\nR11: ");
+    dump_hex_word(state->r11);
+    vga_print("    R12:    ");
+    dump_hex_word(state->r12);
+
+    vga_print("\nR13: ");
+    dump_hex_word(state->r13);
+    vga_print("    R14:    ");
+    dump_hex_word(state->r14);
+
+    vga_print("\nR15: ");
+    dump_hex_word(state->r15);
+    vga_print("    RSP:    ");
+    dump_hex_word(state->rsp);
+
+    vga_print("\nRIP: ");
+    dump_hex_word(state->rip);
+    vga_print("    RFLAGS: ");
+    dump_hex_word(state->rflags);
 
     vga_println("\nStack trace:");
 
@@ -81,7 +141,8 @@ void _init(uint32_t mb_magic, multiboot_info_t* mb_info) {
 
     if (mb_magic != MULTIBOOT_BOOTLOADER_MAGIC) {
         (void)mb_info;
-        vga_println("Wrong bootload magic :/");
+        vga_println("Wrong bootload magic:");
+        dump_hex_word(mb_magic);
         while (1);
     }
 
@@ -118,12 +179,18 @@ void _init(uint32_t mb_magic, multiboot_info_t* mb_info) {
         }
     }
 
+    // Mark kernel in mmap
     mmap_define(&_kernel_code_start, & _kernel_code_end, MMAP_REG_TYPE_SOFTWARE);
+
+    // Mark mutliboot info in mmap
+    mmap_define(mb_info, mb_info + sizeof(multiboot_info_t) - 1, MMAP_REG_TYPE_SOFTWARE);
+    mmap_define(mb_info->mmap_addr, mb_info->mmap_length - 1, MMAP_REG_TYPE_SOFTWARE);
 
     vga_print("Total usable: ");
     dump_hex_word(mmap_get_usable());
     vga_println("");
 
+    // Display MMAP
     for (int i = 0; i < k_mmap_entry_count; i++) {
         switch (k_mmap[i].type) {
             case MMAP_REG_TYPE_AVAILABLE:
@@ -143,9 +210,36 @@ void _init(uint32_t mb_magic, multiboot_info_t* mb_info) {
         vga_println("");
     }
 
-    //paging_init(&paging_k_ctx);
+    // Initialize the paging system
+    paging_init(&paging_k_ctx);
 
-    //palloc_init();
+    // Init temporarily mapped regions
+    palloc_init_region(0, 0x3FFFFFFF, false);
+
+    // Premap all software regions
+    for (int i = 0; i < k_mmap_entry_count; i++) {
+        if (k_mmap[i].type != MMAP_REG_TYPE_SOFTWARE) {
+            continue;
+        }
+        uintptr_t start_page = k_mmap[i].start / 0x1000;
+        uintptr_t end_page = k_mmap[i].end / 0x1000;
+        paging_premap(&paging_k_ctx, k_mmap[i].start, k_mmap[i].start, end_page - start_page + 1, PAGING_FLAG_RW);
+    }
+
+    // Map VGA VRAM
+    paging_premap(&paging_k_ctx, 0xB8000, 0xB8000, 1, PAGING_FLAG_RW);
+
+    // Enable new paging (yikes...)
+    paging_install(&paging_k_ctx);
+
+    // Init the rest of the memory regions
+    palloc_init_region(0x40000000, 0xFFFFFFFFFFFFFFFF, true);
+
+    dump_hex_word(palloc_alloc(1));
+    vga_println("");
+
+    dump_hex_word(palloc_alloc(1));
+    vga_println("");
 
     while(1);
 }

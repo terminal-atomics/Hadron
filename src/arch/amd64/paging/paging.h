@@ -13,11 +13,11 @@
 
 #define PAGING_STRUCT_PT_MASK   0xFF8000000000
 #define PAGING_STRUCT_PD_MASK   0xFF0000000000
-#define PAGING_STRUCT_PDP_MASK  0xFF7FC8000000
+#define PAGING_STRUCT_PDP_MASK  0xFF7FC0000000
 
-#define PAGING_PT_PTR(ptr)      (((ptr) >> 12) | 0xFF8000000000)
-#define PAGING_PD_PTR(ptr)      (((ptr) >> 21) | 0xFF0000000000)
-#define PAGING_PDP_PTR(ptr)     (((ptr) >> 30) | 0xFF7FC8000000)
+#define PAGING_PT_PTR(ptr)      ((((ptr) >> 9) & ~0b111) | 0xFF8000000000)
+#define PAGING_PD_PTR(ptr)      ((((ptr) >> 18) & ~0b111) | 0xFF0000000000)
+#define PAGING_PDP_PTR(ptr)     ((((ptr) >> 27) & ~0b111) | 0xFF7FC0000000)
 
 #define PAGING_FLAG_P           (1 << 0)
 #define PAGING_FLAG_RW          (1 << 1)
@@ -43,7 +43,9 @@ void paging_install(paging_ctx_t* ctx);
 void paging_map(paging_ctx_t* ctx, uint64_t virt, uint64_t phy, size_t count, uint16_t flags);
 void paging_unmap(paging_ctx_t* ctx, uint64_t virt, uint64_t phy, size_t count);
 bool paging_is_mapped(paging_ctx_t* ctx, uint64_t virt, size_t count);
+void paging_premap(paging_ctx_t* ctx, uint64_t virt, uint64_t phy, size_t count, uint16_t flags);
 
 // DO NOT USE OUTSIDE OF THE PAGING IMPLEMENTATION
 int paging_inc_tbl_ec(uint64_t* tbl_e);
 int paging_dec_tbl_ec(uint64_t* tbl_e);
+void paging_refresh(uint64_t ptr);
