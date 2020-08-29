@@ -4,7 +4,7 @@
 #include <arch/amd64/paging/paging.h>
 
 #define PAGE_SIZE       0x1000
-#define BUDDY_DEPTH     3       // 4kb -> 512kb
+#define BUDDY_DEPTH     8       // 4kb -> 512kb
 
 struct pregion_desc {
     uintptr_t start_addr;

@@ -5,7 +5,7 @@ idt_desc_t _k_idt_desc __attribute__ ((aligned (16)));
 
 void idt_init() {
     _k_idt_desc.offset = (uint64_t)&_k_idt;
-    _k_idt_desc.size = sizeof(_k_idt);
+    _k_idt_desc.size = sizeof(_k_idt) - 1;
 
     // Remplace by memset
     for (int i = 0; i < IDT_ENTRY_COUNT; i++) {

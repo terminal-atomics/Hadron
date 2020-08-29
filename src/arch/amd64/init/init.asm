@@ -17,6 +17,9 @@ dd CHECKSUM
 section .bss
 align 0x1000
 
+global _stack_bottom
+global _stack_top
+
 ; Stack
 _stack_bottom:
 resb 0x1000

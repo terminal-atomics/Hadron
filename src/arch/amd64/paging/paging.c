@@ -4,13 +4,7 @@ paging_ctx_t paging_k_ctx;
 
 void paging_init(paging_ctx_t* ctx) {
     memset(ctx->pml4, 0, 0x1000);
-    memset(ctx->dummy_table, 0, 0x1000);
     ctx->pml4[511] = (uint64_t)&ctx->pml4 | PAGING_FLAG_P | PAGING_FLAG_RW;
-    ctx->pml4[510] = (uint64_t)&ctx->dummy_table | PAGING_FLAG_P | PAGING_FLAG_RW;
-
-    // map first entry to the PML4 and last entry to itself
-    ctx->dummy_table[0] = (uint64_t)&ctx->pml4 | PAGING_FLAG_P | PAGING_FLAG_RW;
-    ctx->dummy_table[511] = (uint64_t)&ctx->dummy_table | PAGING_FLAG_P | PAGING_FLAG_RW;
 }
 
 void paging_install(paging_ctx_t* ctx) {
@@ -36,28 +30,22 @@ void paging_map(paging_ctx_t* ctx, uint64_t virt, uint64_t phy, size_t count, ui
             pd_e = (uint64_t*)PAGING_PD_PTR(virt);
             pt_e = (uint64_t*)PAGING_PT_PTR(virt);
 
-            paging_install(ctx);
-
-            dump_hex_word(*pdp_e); vga_println("");
-            while(1);
-
             if (*pml4_e == 0) {
-                *pml4_e = palloc_alloc(1) | PAGING_FLAG_P | PAGING_FLAG_RW;
+                vga_println("New pdp needed");
+                *pml4_e = palloc_alloc(1) | PAGING_FLAG_P | PAGING_FLAG_RW | PAGING_FLAG_US;
                 memset((uint64_t*)((uint64_t)pdp_e & ~0xFFF), 0, 0x1000);
             }
 
-            // dump_hex_word(pdp_e); vga_println("");
-            // while(1);
-
             if (*pdp_e == 0) {
-                
-                *pdp_e = palloc_alloc(1) | PAGING_FLAG_P | PAGING_FLAG_RW;
+                vga_println("New pd needed");
+                *pdp_e = palloc_alloc(1) | PAGING_FLAG_P | PAGING_FLAG_RW | PAGING_FLAG_US;
                 memset((uint64_t*)((uint64_t)pd_e & ~0xFFF), 0, 0x1000);
                 paging_inc_tbl_ec(pml4_e); // Increment pd count
             }
 
             if (*pd_e == 0) {
-                *pd_e = palloc_alloc(1) | PAGING_FLAG_P | PAGING_FLAG_RW;
+                vga_println("New pt needed");
+                *pd_e = palloc_alloc(1) | PAGING_FLAG_P | PAGING_FLAG_RW | PAGING_FLAG_US;
                 memset((uint64_t*)((uint64_t)pt_e & ~0xFFF), 0, 0x1000);
                 paging_inc_tbl_ec(pdp_e); // Increment pt count
             }
@@ -69,7 +57,7 @@ void paging_map(paging_ctx_t* ctx, uint64_t virt, uint64_t phy, size_t count, ui
                 // Map table in the kernel's address space
                 paging_map(&paging_k_ctx, new_tbl, new_tbl, 1, PAGING_FLAG_RW);
                 memset((void*)new_tbl, 0, 0x1000);
-                *pml4_e = new_tbl | PAGING_FLAG_P | PAGING_FLAG_RW;
+                *pml4_e = new_tbl | PAGING_FLAG_P | PAGING_FLAG_RW | PAGING_FLAG_US;
             }
 
             pdp = (uint64_t*)(*pml4_e & PAGING_ADDR_MASK);
@@ -80,7 +68,7 @@ void paging_map(paging_ctx_t* ctx, uint64_t virt, uint64_t phy, size_t count, ui
                 // Map table in the kernel's address space
                 paging_map(&paging_k_ctx, new_tbl, new_tbl, 1, PAGING_FLAG_RW);
                 memset((void*)new_tbl, 0, 0x1000);
-                *pdp_e = new_tbl | PAGING_FLAG_P | PAGING_FLAG_RW;
+                *pdp_e = new_tbl | PAGING_FLAG_P | PAGING_FLAG_RW | PAGING_FLAG_US;
 
                 // Increment the number of pd in pdp
                 paging_inc_tbl_ec(pml4_e);
@@ -94,7 +82,7 @@ void paging_map(paging_ctx_t* ctx, uint64_t virt, uint64_t phy, size_t count, ui
                 // Map table in the kernel's address space
                 paging_map(&paging_k_ctx, new_tbl, new_tbl, 1, PAGING_FLAG_RW);
                 memset((void*)new_tbl, 0, 0x1000);
-                *pd_e = new_tbl | PAGING_FLAG_P | PAGING_FLAG_RW;
+                *pd_e = new_tbl | PAGING_FLAG_P | PAGING_FLAG_RW | PAGING_FLAG_US;
 
                 // Increment the number of pt in pd
                 paging_inc_tbl_ec(pdp_e);
@@ -112,7 +100,7 @@ void paging_map(paging_ctx_t* ctx, uint64_t virt, uint64_t phy, size_t count, ui
     }
 }
 
-void paging_unmap(paging_ctx_t* ctx, uint64_t virt, uint64_t phy, size_t count) {
+void paging_unmap(paging_ctx_t* ctx, uint64_t virt, size_t count) {
     uint64_t* pml4;
     uint64_t* pdp;
     uint64_t* pd;
@@ -159,7 +147,6 @@ void paging_unmap(paging_ctx_t* ctx, uint64_t virt, uint64_t phy, size_t count) 
         }
 
         virt += 0x1000;
-        phy += 0x1000;
     }
 }
 
@@ -171,16 +158,16 @@ bool paging_is_mapped(paging_ctx_t* ctx, uint64_t virt, size_t count) {
 }
 
 int paging_inc_tbl_ec(uint64_t* tbl_e) {
-    // uint64_t nc = ((*tbl_e >> 52) & 0b111111111) + 1;
-    // *tbl_e = (*tbl_e & 0xE00FFFFFFFFFFFFF) | (nc << 52);
-    // return nc;
+    uint64_t nc = ((*tbl_e >> 52) & 0b111111111) + 1;
+    *tbl_e = (*tbl_e & 0xE00FFFFFFFFFFFFF) | (nc << 52);
+    return nc;
     return 1;
 }
 
 int paging_dec_tbl_ec(uint64_t* tbl_e) {
-    // uint64_t nc = ((*tbl_e >> 52) & 0b111111111) - 1;
-    // *tbl_e = (*tbl_e & 0xE00FFFFFFFFFFFFF) | (nc << 52);
-    // return nc;
+    uint64_t nc = ((*tbl_e >> 52) & 0b111111111) - 1;
+    *tbl_e = (*tbl_e & 0xE00FFFFFFFFFFFFF) | (nc << 52);
+    return nc;
     return 1;
 }
 
@@ -200,23 +187,20 @@ void paging_premap(paging_ctx_t* ctx, uint64_t virt, uint64_t phy, size_t count,
 
         if (*pml4_e == 0) {
             uint64_t new_tbl = palloc_alloc(1);
-            vga_print("Paging alloc: "); dump_hex_word(new_tbl); vga_println("");
-            
 
             // No need to map since this is for the kernel only
             memset((void*)new_tbl, 0, 0x1000);
-            *pml4_e = new_tbl | PAGING_FLAG_P | PAGING_FLAG_RW;
+            *pml4_e = new_tbl | PAGING_FLAG_P | PAGING_FLAG_RW | PAGING_FLAG_US;
         }
 
         pdp = (uint64_t*)(*pml4_e & PAGING_ADDR_MASK);
         pdp_e = &pdp[PAGING_PDP_INDX(virt)];
         if (*pdp_e == 0) {
             uint64_t new_tbl = palloc_alloc(1);
-            vga_print("Paging alloc: "); dump_hex_word(new_tbl); vga_println("");
 
             // No need to map since this is for the kernel only
             memset((void*)new_tbl, 0, 0x1000);
-            *pdp_e = new_tbl | PAGING_FLAG_P | PAGING_FLAG_RW;
+            *pdp_e = new_tbl | PAGING_FLAG_P | PAGING_FLAG_RW | PAGING_FLAG_US;
 
             // Increment the number of pd in pdp
             paging_inc_tbl_ec(pml4_e);
@@ -226,11 +210,10 @@ void paging_premap(paging_ctx_t* ctx, uint64_t virt, uint64_t phy, size_t count,
         pd_e = &pd[PAGING_PD_INDX(virt)];
         if (*pd_e == 0) {
             uint64_t new_tbl = palloc_alloc(1);
-            vga_print("Paging alloc: "); dump_hex_word(new_tbl); vga_println("");
 
             // No need to map since this is for the kernel only
             memset((void*)new_tbl, 0, 0x1000);
-            *pd_e = new_tbl | PAGING_FLAG_P | PAGING_FLAG_RW;
+            *pd_e = new_tbl | PAGING_FLAG_P | PAGING_FLAG_RW | PAGING_FLAG_US;
 
             // Increment the number of pt in pd
             paging_inc_tbl_ec(pdp_e);

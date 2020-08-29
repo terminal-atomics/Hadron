@@ -22,6 +22,7 @@ file(GLOB _MEMORY "src/common/memory/*.c" "src/common/memory/*.asm")
 
 file(GLOB _INIT "src/arch/amd64/init/*.c" "src/arch/amd64/init/*.asm")
 file(GLOB _GDT "src/arch/amd64/gdt/*.c" "src/arch/amd64/gdt/*.asm")
+file(GLOB _TASKING "src/arch/amd64/tasking/*.c" "src/arch/amd64/tasking/*.asm")
 file(GLOB _INTERRUPTS "src/arch/amd64/interrupts/*.c" "src/arch/amd64/interrupts/*.asm")
 file(GLOB _IO "src/arch/amd64/io/*.c" "src/arch/amd64/io/*.asm")
 file(GLOB _PIC "src/arch/amd64/pic/*.c" "src/arch/amd64/pic/*.asm")
@@ -33,4 +34,4 @@ add_dependencies(iso hadron)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "../bin/amd64/")
 
-add_executable(hadron ${_STD} ${_INIT} ${_GDT} ${_INTERRUPTS} ${_IO} ${_PIC} ${_VGA} ${_PAGING} ${_MEMORY})
+add_executable(hadron ${_STD} ${_INIT} ${_GDT} ${_TASKING} ${_INTERRUPTS} ${_IO} ${_PIC} ${_VGA} ${_PAGING} ${_MEMORY})

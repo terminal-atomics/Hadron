@@ -129,9 +129,8 @@ void kbd(isr_state_t* state) {
     inb(0x60);
 }
 
-void bruh() {
-    int* test = (int*)0x10000000;
-    *test = 420;
+void syscall_handler(isr_state_t* state) {
+    vga_println("Syscall!");
 }
 
 void _init(uint32_t mb_magic, multiboot_info_t* mb_info) {
@@ -148,10 +147,21 @@ void _init(uint32_t mb_magic, multiboot_info_t* mb_info) {
 
     vga_println("Hello Hadron! " __TIME__ " " __DATE__);
 
+    // Setup GDT
     gdt_init();
-    gdt_set_entry(1, 0, 0, 0, GDT_FLAG_CODE);
-    gdt_set_entry(2, 0, 0, 0, GDT_FLAG_DATA);
+    gdt_set_entry(1, 0, 0, 0, GDT_FLAG_CODE); // Kernel code
+    gdt_set_entry(2, 0, 0, 0, GDT_FLAG_DATA); // Kernel data
+    gdt_set_entry(3, 0, 0, 3, GDT_FLAG_CODE); // Userspace code
+    gdt_set_entry(4, 0, 0, 3, GDT_FLAG_DATA); // Userspace data
+
+    // Setup TSS
+    tss_load(5);
+
+    // Load GDT
     gdt_load();
+
+    // Install TSS
+    tss_install(5);
 
     // TODO: Finish the PIT
     interrupts_init();
@@ -160,6 +170,7 @@ void _init(uint32_t mb_magic, multiboot_info_t* mb_info) {
         interrupts_bind_handler(i, err_handler);
     }
     interrupts_bind_handler(33, kbd);
+    interrupts_bind_handler(0x42, syscall_handler);
 
     interrupts_enable();
 
@@ -209,7 +220,7 @@ void _init(uint32_t mb_magic, multiboot_info_t* mb_info) {
         dump_hex_word(k_mmap[i].end);
         vga_println("");
     }
-
+ 
     // Initialize the paging system
     paging_init(&paging_k_ctx);
 
@@ -235,11 +246,17 @@ void _init(uint32_t mb_magic, multiboot_info_t* mb_info) {
     // Init the rest of the memory regions
     palloc_init_region(0x40000000, 0xFFFFFFFFFFFFFFFF, true);
 
-    dump_hex_word(palloc_alloc(1));
+    dump_hex_word(malloc(52));
     vga_println("");
 
-    dump_hex_word(palloc_alloc(1));
+    dump_hex_word(malloc(1000000));
     vga_println("");
+
+    dump_hex_word(malloc(69));
+    vga_println("");
+
+    paging_map(&paging_k_ctx, &_test_r3_task, &_test_r3_task, 1, PAGING_FLAG_RW | PAGING_FLAG_US);
+    tasking_enter_r3();
 
     while(1);
 }

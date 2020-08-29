@@ -54,12 +54,14 @@ void palloc_init_region(uintptr_t start, uintptr_t end, bool paging_ready) {
         // calculate max order and fill buddy table
         desc->max_order = BUDDY_DEPTH - 1;
         desc->buddy_order_ptr[0] = &desc->buddies[0];
+        size_t buddy_ptr = 0;
         for (int i = 0; i < BUDDY_DEPTH; i++) {
             if (available_pages / (1 << i) == 0) {
                 desc->max_order = i - 1;
                 break;
             }
-            desc->buddy_order_ptr[i] = &desc->buddies[buddy_size];
+            desc->buddy_order_ptr[i] = &desc->buddies[buddy_ptr];
+            buddy_ptr += ((page_count / (1 << i)) / 8) + 1;
         }
 
         // Fill in the rest of the info and clear buddies
@@ -95,7 +97,16 @@ void palloc_init_region(uintptr_t start, uintptr_t end, bool paging_ready) {
             continue;
         }
 
-        paging_premap(&paging_k_ctx, first_addr, first_addr, 1 /* NEEDS TO BE NUMBER OF HEADER PAGES */, PAGING_FLAG_RW);
+        pregion_desc_t* desc = (pregion_desc_t*)first_addr;
+
+        // Calculate the number of pages needed by the header
+        size_t buddy_size = 0;
+        for (int i = 0; i < BUDDY_DEPTH; i++) {
+            buddy_size += ((page_count / (1 << i)) / 8) + 1;
+        }
+        size_t header_pages = ((sizeof(pregion_desc_t) + buddy_size) / PAGE_SIZE) + 1;
+
+        paging_premap(&paging_k_ctx, first_addr, first_addr, header_pages, PAGING_FLAG_RW);
     }    
 }
 
@@ -144,8 +155,6 @@ uintptr_t palloc_alloc(size_t count) {
         // Mark order 0 buddies used
         palloc_bit_fill(desc->buddy_order_ptr[0], page_offset, count);
 
-        
-
         // Update higher order buddies
         for (size_t ord = 1; ord < desc->max_order + 1; ord++) {
             size_t block_count = count / (1 << ord);
@@ -160,7 +169,7 @@ uintptr_t palloc_alloc(size_t count) {
 }
 
 void palloc_free(uintptr_t ptr, size_t count) {
-
+    vga_println("<========== UH OH, FREE NOT IMPLEMENTED!!!!! ==========>");
 }
 
 void palloc_bit_fill(uint8_t* ptr, uintptr_t offset, size_t count) {
@@ -180,6 +189,7 @@ void palloc_bit_clear(uint8_t* ptr, uintptr_t offset, size_t count) {
 uintptr_t palloc_bit_find(uint8_t* ptr, size_t count, size_t max) {
     size_t continuous = 0;
     for (uintptr_t i = 0; i < max; i++) {
+        
         if (ptr[i / 8] & (1 << (i % 8))) {
             continuous = 0;
         }

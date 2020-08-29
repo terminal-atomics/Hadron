@@ -35,7 +35,7 @@
         {
             "label": "Run (With ISO)",
             "type": "shell",
-            "command": "bash --login -c 'cd build && make -j4 iso'; &('C:/Program Files/qemu/qemu-system-x86_64') -cdrom bin/amd64/hadron.iso",
+            "command": "bash --login -c 'cd build && make -j4 iso'; &('C:/Program Files/qemu/qemu-system-x86_64') -cdrom bin/amd64/hadron.iso -m 8G -monitor stdio",
             "group": {
                 "kind": "test",
                 "isDefault": true

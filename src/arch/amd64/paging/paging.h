@@ -15,9 +15,9 @@
 #define PAGING_STRUCT_PD_MASK   0xFF0000000000
 #define PAGING_STRUCT_PDP_MASK  0xFF7FC0000000
 
-#define PAGING_PT_PTR(ptr)      ((((ptr) >> 9) & ~0b111) | 0xFF8000000000)
-#define PAGING_PD_PTR(ptr)      ((((ptr) >> 18) & ~0b111) | 0xFF0000000000)
-#define PAGING_PDP_PTR(ptr)     ((((ptr) >> 27) & ~0b111) | 0xFF7FC0000000)
+#define PAGING_PT_PTR(ptr)      ((((ptr) >> 9) & ~0b111) | 0xFFFFFF8000000000)
+#define PAGING_PD_PTR(ptr)      ((((ptr) >> 18) & ~0b111) | 0xFFFFFFFFC0000000)
+#define PAGING_PDP_PTR(ptr)     ((((ptr) >> 27) & ~0b111) | 0xFFFFFFFFFFE00000)
 
 #define PAGING_FLAG_P           (1 << 0)
 #define PAGING_FLAG_RW          (1 << 1)
@@ -31,7 +31,6 @@
 
 struct paging_ctx {
     uint64_t pml4[512]__attribute__((aligned(0x1000)));
-    uint64_t dummy_table[512]__attribute__((aligned(0x1000)));
     bool kernel;
 };
 typedef struct paging_ctx paging_ctx_t;
@@ -41,7 +40,7 @@ extern paging_ctx_t paging_k_ctx;
 void paging_init(paging_ctx_t* ctx);
 void paging_install(paging_ctx_t* ctx);
 void paging_map(paging_ctx_t* ctx, uint64_t virt, uint64_t phy, size_t count, uint16_t flags);
-void paging_unmap(paging_ctx_t* ctx, uint64_t virt, uint64_t phy, size_t count);
+void paging_unmap(paging_ctx_t* ctx, uint64_t virt, size_t count);
 bool paging_is_mapped(paging_ctx_t* ctx, uint64_t virt, size_t count);
 void paging_premap(paging_ctx_t* ctx, uint64_t virt, uint64_t phy, size_t count, uint16_t flags);
 
