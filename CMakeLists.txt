@@ -17,8 +17,10 @@ set(CMAKE_EXE_LINKER_FLAGS "-T ../src/arch/amd64/linker.ld -z max-page-size=4096
 
 set(CMAKE_ASM_NASM_OBJECT_FORMAT elf64)
 
+file(GLOB _KERNEL "src/common/kernel/*.c" "src/common/kernel/*.asm")
 file(GLOB _STD "src/common/std/*.c" "src/common/std/*.asm")
 file(GLOB _MEMORY "src/common/memory/*.c" "src/common/memory/*.asm")
+file(GLOB _SCHEDULER "src/common/scheduler/*.c" "src/common/scheduler/*.asm")
 
 file(GLOB _INIT "src/arch/amd64/init/*.c" "src/arch/amd64/init/*.asm")
 file(GLOB _GDT "src/arch/amd64/gdt/*.c" "src/arch/amd64/gdt/*.asm")
@@ -34,4 +36,4 @@ add_dependencies(iso hadron)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "../bin/amd64/")
 
-add_executable(hadron ${_STD} ${_INIT} ${_GDT} ${_TASKING} ${_INTERRUPTS} ${_IO} ${_PIC} ${_VGA} ${_PAGING} ${_MEMORY})
+add_executable(hadron ${_KERNEL} ${_STD} ${_MEMORY} ${_SCHEDULER} ${_INIT} ${_GDT} ${_TASKING} ${_INTERRUPTS} ${_IO} ${_PIC} ${_VGA} ${_PAGING})

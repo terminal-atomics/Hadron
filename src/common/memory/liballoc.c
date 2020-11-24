@@ -14,13 +14,13 @@ int liballoc_unlock() {
 
 void* liballoc_alloc(int p) {
     uintptr_t ptr = palloc_alloc(p);
-    paging_map(&paging_k_ctx, ptr, ptr, p, PAGING_FLAG_RW);
+    paging_map(&paging_k_ctx, (uintptr_t)ptr, (uintptr_t)ptr, p, PAGING_FLAG_RW);
 	return (void*)ptr;
 }
 
 int liballoc_free(void* ptr,int p) {
     paging_unmap(&paging_k_ctx, (uintptr_t)ptr, p);
-	palloc_free(ptr, p);
+	palloc_free((uintptr_t)ptr, p);
 	return 0;
 }
 
@@ -232,7 +232,7 @@ static inline struct boundary_tag* split_tag( struct boundary_tag* tag )
 	unsigned int remainder = tag->real_size - sizeof(struct boundary_tag) - tag->size;
 		
 	struct boundary_tag *new_tag = 
-				   (struct boundary_tag*)((unsigned int)tag + sizeof(struct boundary_tag) + tag->size);	
+				   (struct boundary_tag*)((uintptr_t)tag + sizeof(struct boundary_tag) + tag->size);	
 	
 						new_tag->magic = LIBALLOC_MAGIC;
 						new_tag->real_size = remainder;	
@@ -399,7 +399,7 @@ void *malloc(size_t size)
 		
 		
 
-	ptr = (void*)((unsigned int)tag + sizeof( struct boundary_tag ) );
+	ptr = (void*)((uintptr_t)tag + sizeof( struct boundary_tag ) );
 
 
 	
@@ -429,7 +429,7 @@ void free(void *ptr)
 	liballoc_lock();
 	
 
-		tag = (struct boundary_tag*)((unsigned int)ptr - sizeof( struct boundary_tag ));
+		tag = (struct boundary_tag*)((uintptr_t)ptr - sizeof( struct boundary_tag ));
 	
 		if ( tag->magic != LIBALLOC_MAGIC ) 
 		{
@@ -544,7 +544,7 @@ void*   realloc(void *p, size_t size)
 	if ( p == NULL ) return malloc( size );
 
 	liballoc_lock();		// lockit
-	tag = (struct boundary_tag*)((unsigned int)p - sizeof( struct boundary_tag ));
+	tag = (struct boundary_tag*)((uintptr_t)p - sizeof( struct boundary_tag ));
 	real_size = tag->size;
 	liballoc_unlock();
 

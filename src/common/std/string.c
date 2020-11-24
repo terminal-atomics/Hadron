@@ -78,3 +78,11 @@ void itoa(int n, char* buf, int buflen) {
 	memcpy(&buf[0], &buf[pos], ret_len);
 	buf[ret_len] = 0;
 }
+
+char* strclone(char* str) {
+	size_t len = strlen(str);
+	char* newstr = (char*)malloc(len + 1);
+	memcpy(newstr, str, len);
+	newstr[len] = 0;
+	return newstr;
+}

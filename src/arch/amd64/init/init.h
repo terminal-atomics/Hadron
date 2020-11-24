@@ -10,6 +10,9 @@
 #include <common/memory/palloc.h>
 #include <common/memory/liballoc.h>
 #include <arch/amd64/tasking/tasking.h>
+#include <common/scheduler/scheduler.h>
+#include <common/kernel/kernel.h>
+
 
 void _init();
 

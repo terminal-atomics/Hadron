@@ -1,11 +1,29 @@
 extern _c_isr_handlers
+extern tasking_kernel_cr3
+extern tasking_current_task
 
 %macro  isr_err 1
     push qword %1
 
-    ; Push all registers
+    ; Push rax and rbx registers (needed for cr3 check)
     push rax
     push rbx
+
+    ; Check CR3 to see if it's the kernel's
+    mov rax, [tasking_kernel_cr3]
+    cmp rax, 0
+    je _isr_no_cr3_%1
+
+    ; If the CR3 is  valid, check if it's the same as the current task
+    mov rbx, cr3
+    cmp rbx, rax
+    je _isr_no_cr3_%1
+
+    mov cr3, rax
+    
+_isr_no_cr3_%1:
+
+    ; Push the rest of the registers
     push rcx
     push rdx
     push rbp
@@ -34,12 +52,28 @@ extern _c_isr_handlers
 %endmacro
 
 %macro  isr_no_err 1
+    ;xchg bx, bx
     push qword 0
     push qword %1
 
-    ; Push all registers
+    ; Push rax and rbx (needed for cr3)
     push rax
     push rbx
+
+    ; Check CR3 to see if it's the kernel's
+    mov rax, [tasking_kernel_cr3]
+    cmp rax, 0
+    je _isr_no_cr3_%1
+
+    ; If the CR3 is  valid, check if it's the same as the current task
+    mov rbx, cr3
+    cmp rbx, rax
+    je _isr_no_cr3_%1
+
+    mov cr3, rax
+    
+_isr_no_cr3_%1:
+    ; Push the rest of the registers
     push rcx
     push rdx
     push rbp
@@ -67,6 +101,9 @@ extern _c_isr_handlers
     jmp _isr_common
 %endmacro
 
+global isr_handlers_begin
+isr_handlers_begin:
+
 _isr_common:
     mov rbx, cr0
     push rbx
@@ -81,16 +118,19 @@ _isr_common:
     mov rbx, [_c_isr_handlers + rax]
     call rbx
 
-    pop rbx
-    mov cr4, rbx
-    pop rbx
-    mov cr3, rbx
-    pop rbx
-    mov cr2, rbx
-    pop rbx
-    mov cr0, rbx
+    ; pop rbx
+    ; mov cr4, rbx
+    ; pop rbx
+    ; mov cr3, rbx
+    ; pop rbx
+    ; mov cr2, rbx
+    ; pop rbx
+    ; mov cr0, rbx
 
-    ; Pop all registers
+    ; Pop all config registers
+    add rsp, 32
+
+    ; Pop all registers except rax and rbx
     pop r15
     pop r14
     pop r13
@@ -104,6 +144,23 @@ _isr_common:
     pop rbp
     pop rdx
     pop rcx
+
+    ; Switch back to task's cr3
+    mov rax, [tasking_current_task]
+    cmp rax, 0
+    je _isr_no_switch_back_cr3
+
+    ; If there is a valid current task, check cr3
+    mov rax, [rax + 120]
+    mov rbx, cr3 ; Should be the kernel's CR3
+    cmp rax, rbx
+
+    je _isr_no_switch_back_cr3
+
+    mov cr3, rax
+
+_isr_no_switch_back_cr3:
+    ; Pop rax and rbx
     pop rbx
     pop rax
 
@@ -626,3 +683,6 @@ _isr252: isr_no_err 252
 _isr253: isr_no_err 253
 _isr254: isr_no_err 254
 _isr255: isr_no_err 255
+
+global isr_handlers_end
+isr_handlers_end:

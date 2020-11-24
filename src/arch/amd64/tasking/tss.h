@@ -21,7 +21,7 @@ struct tss {
 }__attribute__((packed));
 typedef struct tss tss_t;
 
-extern tss_t k_tss;
+tss_t k_tss __attribute__ ((aligned (0x1000)));
 
 void tss_load(size_t desc);
 void tss_install(size_t desc);

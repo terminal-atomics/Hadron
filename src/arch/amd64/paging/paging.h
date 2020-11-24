@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <common/memory/palloc.h>
+#include <common/memory/liballoc.h>
 
 #define PAGING_ADDR_MASK        0xFFFFFFFFFF000
 #define PAGING_PML4_INDX(i)     (((i) >> 39) & 0b111111111)
@@ -30,7 +31,7 @@
 #define PAGING_FLAG_G           (1 << 8)
 
 struct paging_ctx {
-    uint64_t pml4[512]__attribute__((aligned(0x1000)));
+    uint64_t* pml4;
     bool kernel;
 };
 typedef struct paging_ctx paging_ctx_t;
@@ -39,6 +40,7 @@ extern paging_ctx_t paging_k_ctx;
 
 void paging_init(paging_ctx_t* ctx);
 void paging_install(paging_ctx_t* ctx);
+paging_ctx_t* paging_create_context();
 void paging_map(paging_ctx_t* ctx, uint64_t virt, uint64_t phy, size_t count, uint16_t flags);
 void paging_unmap(paging_ctx_t* ctx, uint64_t virt, size_t count);
 bool paging_is_mapped(paging_ctx_t* ctx, uint64_t virt, size_t count);

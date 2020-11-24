@@ -30,6 +30,8 @@ struct idt_desc {
 }__attribute__((packed));
 typedef struct idt_desc idt_desc_t;
 
+idt_entry_t k_idt[IDT_ENTRY_COUNT] __attribute__ ((aligned (0x1000)));
+
 void idt_init();
 void idt_set_entry(int id, uint64_t offset, uint16_t segId, uint8_t ist, uint8_t flags, uint8_t dpl);
 idt_entry_t* idt_get_entry(int id);

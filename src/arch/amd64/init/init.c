@@ -130,7 +130,12 @@ void kbd(isr_state_t* state) {
 }
 
 void syscall_handler(isr_state_t* state) {
+    (void)state;
     vga_println("Syscall!");
+}
+
+void test_func() {
+    while(1);
 }
 
 void _init(uint32_t mb_magic, multiboot_info_t* mb_info) {
@@ -170,7 +175,6 @@ void _init(uint32_t mb_magic, multiboot_info_t* mb_info) {
         interrupts_bind_handler(i, err_handler);
     }
     interrupts_bind_handler(33, kbd);
-    interrupts_bind_handler(0x42, syscall_handler);
 
     interrupts_enable();
 
@@ -191,10 +195,10 @@ void _init(uint32_t mb_magic, multiboot_info_t* mb_info) {
     }
 
     // Mark kernel in mmap
-    mmap_define(&_kernel_code_start, & _kernel_code_end, MMAP_REG_TYPE_SOFTWARE);
+    mmap_define((uintptr_t)_kernel_code_start, (uintptr_t)_kernel_code_end, MMAP_REG_TYPE_SOFTWARE);
 
     // Mark mutliboot info in mmap
-    mmap_define(mb_info, mb_info + sizeof(multiboot_info_t) - 1, MMAP_REG_TYPE_SOFTWARE);
+    mmap_define((uintptr_t)mb_info, (uintptr_t)mb_info + sizeof(multiboot_info_t) - 1, MMAP_REG_TYPE_SOFTWARE);
     mmap_define(mb_info->mmap_addr, mb_info->mmap_length - 1, MMAP_REG_TYPE_SOFTWARE);
 
     vga_print("Total usable: ");
@@ -243,20 +247,17 @@ void _init(uint32_t mb_magic, multiboot_info_t* mb_info) {
     // Enable new paging (yikes...)
     paging_install(&paging_k_ctx);
 
-    // Init the rest of the memory regions
+    // // Init the rest of the memory regions
     palloc_init_region(0x40000000, 0xFFFFFFFFFFFFFFFF, true);
 
-    dump_hex_word(malloc(52));
-    vga_println("");
+    // Init tasking and scheduler
+    tasking_init();
+    scheduler_init();
 
-    dump_hex_word(malloc(1000000));
-    vga_println("");
+    task_t* state = tasking_prepare_task((uintptr_t)kmain, (uintptr_t)_stack_top, (uintptr_t)_stack_top, &paging_k_ctx, TASK_PRIV_KERNEL);
+    scheduler_create_thread(state);
 
-    dump_hex_word(malloc(69));
-    vga_println("");
-
-    paging_map(&paging_k_ctx, &_test_r3_task, &_test_r3_task, 1, PAGING_FLAG_RW | PAGING_FLAG_US);
-    tasking_enter_r3();
+    tasking_start();
 
     while(1);
 }

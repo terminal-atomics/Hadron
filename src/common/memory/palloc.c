@@ -97,8 +97,6 @@ void palloc_init_region(uintptr_t start, uintptr_t end, bool paging_ready) {
             continue;
         }
 
-        pregion_desc_t* desc = (pregion_desc_t*)first_addr;
-
         // Calculate the number of pages needed by the header
         size_t buddy_size = 0;
         for (int i = 0; i < BUDDY_DEPTH; i++) {
@@ -147,7 +145,7 @@ uintptr_t palloc_alloc(size_t count) {
 
         // Search
         uintptr_t offset = palloc_bit_find(desc->buddy_order_ptr[order], buddy_count, desc->page_count / order_bs);
-        if (offset == ~1) {
+        if (offset == ~(uintptr_t)0) {
             continue;
         }
         uintptr_t page_offset = offset * order_bs;
@@ -165,14 +163,16 @@ uintptr_t palloc_alloc(size_t count) {
         return desc->start_addr + (page_offset * PAGE_SIZE);
     }
 
-    return ~1;
+    return ~(uintptr_t)0;
 }
 
 void palloc_free(uintptr_t ptr, size_t count) {
+    (void)ptr;
+    (void)count;
     vga_println("<========== UH OH, FREE NOT IMPLEMENTED!!!!! ==========>");
 }
 
-void palloc_bit_fill(uint8_t* ptr, uintptr_t offset, size_t count) {
+void palloc_bit_fill(uint8_t* ptr, uintptr_t offset, size_t count) {   
     uintptr_t end = offset + count;
     for (uintptr_t i = offset; i < end; i++) {
         ptr[i / 8] |= 1 << (i % 8);
@@ -200,5 +200,5 @@ uintptr_t palloc_bit_find(uint8_t* ptr, size_t count, size_t max) {
             return i - (count - 1);
         }
     }
-    return ~1;
+    return ~(uintptr_t)0;
 }

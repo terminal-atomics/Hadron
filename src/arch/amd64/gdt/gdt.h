@@ -41,10 +41,11 @@ struct gdt_desc {
 }__attribute__((packed));
 typedef struct gdt_desc gdt_desc_t;
 
+gdt_entry_t k_gdt[GDT_ENTRY_COUNT] __attribute__ ((aligned (0x1000)));
 
 void gdt_init();
 void gdt_set_entry(int id, uint32_t base, uint32_t limit, uint8_t dpl, uint16_t flags);
-void gdt_set_sys_entry(int id, uint32_t base, uint32_t limit, uint8_t dpl, uint8_t type);
+void gdt_set_sys_entry(int id, uint64_t base, uint32_t limit, uint8_t dpl, uint8_t type);
 gdt_entry_t* get_get_entry(int id);
 void gdt_load();
 
